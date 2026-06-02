@@ -66,8 +66,6 @@ class Pool:
                     else:
                         row_text.append(f'{cell.pawn}', style=f'#{cell.pawn.color}')
                 console.print(row_text)
-        from creatures import Agent
-        console.print(*sorted(x.energy for x in self.creatures if isinstance(x, Agent)))
         sleep(self.delta_time)
         clear()
 
