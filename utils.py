@@ -1,32 +1,39 @@
 from random import choices, choice
 from string import ascii_uppercase, ascii_lowercase
+from sys import stdout
 
-from effects import Effect
 from position import Position
-from os import system as os_system, name as os_name
 
 
-def generate_color():
-    return ''.join(choices('0123465789abcdef', k=6))
+def generate_color() -> str:
+    return ''.join(choices('0123456789abcdef', k=6))
 
 
-clear = lambda: os_system('cls' if os_name == 'nt' else 'clear')
+clear = lambda: stdout.write('\033[2J\033[H\033[3J')
 
-agent_emoji = {'S': 'v|', 'N': '^|', 'W': '<-', 'E': '->', 'NE': '/\'', 'SE': '\\,', 'NW': '`\\', 'SW': ',/'}
-
-food_emoji = ('()', '°°', '~~', '[]', '||', '()', '{}', '--', '..', '■■', '●●', '◎◎', '◉◉')
-routes = {
-    'N': Position(0, 1),  # Вверх (Y увеличивается)
-    'S': Position(0, -1),  # Вниз (Y уменьшается)
-    'E': Position(1, 0),  # Вправо
-    'W': Position(-1, 0),  # Влево
-    'NE': Position(1, 1),  # Вправо-вверх
-    'NW': Position(-1, 1),  # Влево-вверх
-    'SE': Position(1, -1),  # Вправо-вниз
-    'SW': Position(-1, -1)  # Влево-вниз
+agent_emoji: dict[str, str] = {
+    'S': 'v|', 'N': '^|', 'W': '<-', 'E': '->',
+    'NE': '/\'', 'SE': '\\,', 'NW': '`\\', 'SW': ',/'
 }
 
-multiplier = {
+food_emoji: tuple[str, ...] = (
+    '()', '°°', '~~', '[]', '||', '()', '{}', '--',
+    '..', '■■', '●●', '◎◎', '◉◉'
+)
+
+routes: dict[str, Position] = {
+    'N':  Position(0,  1),
+    'S':  Position(0, -1),
+    'E':  Position(1,  0),
+    'W':  Position(-1, 0),
+    'NE': Position(1,  1),
+    'NW': Position(-1, 1),
+    'SE': Position(1, -1),
+    'SW': Position(-1,-1),
+}
+
+# Fields where None means "skip mutation entirely"
+multiplier: dict[str, int | None] = {
     'name': None,
     'position': None,
     'color': None,
@@ -37,7 +44,7 @@ multiplier = {
     'health': None,
     'energy': None,
     'base_energy_to_breeding': 1,
-    'energy_per_step': None,
+    'energy_per_step': 1,
     'energy_to_breeding': None,
     'fov': 1,
     'view_range': 1,
@@ -46,33 +53,16 @@ multiplier = {
     'is_herbivores': 0,
     'is_predator': 0,
     'is_friendly_predator': 0,
-    'immunities': 0,
+    'generation': None,
 }
 
 
-def list_effects():
-    return Effect.__subclasses__()
 
-
-def default_effects():
-    effects_dict = {}
-    for effect_cls in list_effects():
-        try:
-            effects_dict[effect_cls(duration=10)] = False
-        except TypeError:
-            effects_dict[effect_cls()] = False
-    return effects_dict
-
-
-def default_immunities():
-    return {effect: False for effect in list_effects()}
-
-
-def generate_name(r):
+def generate_name(r: int) -> str:
     return choice(ascii_uppercase) + ''.join(choices(ascii_lowercase, k=max(1, r - 1)))
 
 
-def generate_available(name, r):
+def generate_available(name: str, r: int) -> str:
     if not name:
         import main
         while True:
@@ -81,3 +71,16 @@ def generate_available(name, r):
                 return name
     return name
 
+
+order: dict[str, int] = {
+    'name': 1, 'generation': 2, 'color': 3, 'species': 4,
+    'health': 10, 'energy': 11, 'energy_to_breeding': 12,
+    'base_health': 20, 'base_energy': 21, 'base_energy_to_breeding': 22, 'energy_per_step': 23,
+    'speed': 30, 'power': 31, 'fov': 32, 'view_range': 33,
+    'is_herbivores': 40, 'is_predator': 41, 'is_friendly_predator': 42,
+    'change_chance': 50,
+}
+
+
+def get_field_priority(tag: str) -> int:
+    return order.get(tag, 999)
